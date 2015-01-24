@@ -1,8 +1,10 @@
 package schema
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
-const jsGood = `{"name":"John","age":25, "hair":{"color":"brown"}}`
 const jsBadReqString = `{"age":25}`
 const jsBadReqInt = `{"name":"John"}`
 const jsBadReqNested = `{"name":"John","age":25, "hair":{}}`
@@ -12,66 +14,65 @@ const jsTruncateString = `{"name":"Jonathon","age":25, "hair":{"color":"brown"}}
 const jsTruncateStringPtr = `{"name":"Jonathon","age":25, "hair":[{"color":"brown"},{"color":"red"}]}`
 
 type Test struct {
-	Name string `json:"name" schema:"req,slen(4)"`
+	Name string `json:"name" schema:"req,truncate(4)"`
 	Age  int    `json:"age" schema:"req"`
 	Hair Hair   `json:"hair" schema:req`
 }
 type TestPtr struct {
-	Name string  `json:"name" schema:"req,slen(4)"`
+	Name string  `json:"name" schema:"req,truncate(4)"`
 	Age  int     `json:"age" schema:"req"`
 	Hair []*Hair `json:"hair" schema:req`
 }
 
 type Hair struct {
-	Color string `json:"color" schema:"req,slen(2)"`
+	Color string `json:"color" schema:"req,truncate(2)"`
 }
 
-func TestUnmarshalGood(t *testing.T) {
-	v := Test{}
-	err := Unmarshal([]byte(jsGood), &v)
-	if err != nil {
-		t.Error("Could not marshal proper JSON: ", err)
+func TestRequired(t *testing.T) {
+	fixtures := []struct {
+		Expected error
+		s        interface{}
+		json     string
+		name     string
+		msg      string
+	}{
+		{nil, &Test{}, `{"name":"John","age":25, "hair":{"color":"brown"}}`, "Unmarshal proper json", "expect nil error, got: "},
+		{nil, &TestPtr{}, `{"name":"John","age":25, "hair":[{"color":"brown"}]}`, "Unmarshal proper json with slice pointer", "expect nil error, got: "},
+		{&SchemaError{Field: "Name", ErrType: "req"}, &Test{}, `{"age":25, "hair":{"color":"brown"}}`, "Omit required field 'name' (string)", "expect require error, got: "},
+		{&SchemaError{Field: "Color", ErrType: "req"}, &Test{}, `{"name":"John","age":25, "hair":{}}`, "Omit required nested field 'hair:color' (string)", "expect require error, got: "},
+		{&SchemaError{Field: "Color", ErrType: "req"}, &TestPtr{}, `{"name":"John","age":25, "hair":[{}]}`, "Omit required nested field pointer 'hair:color' (string)", "expect require error, got: "},
+	}
+
+	for _, f := range fixtures {
+		t.Log(f.name)
+		err := Unmarshal([]byte(f.json), f.s)
+		if fmt.Sprint(err) != fmt.Sprint(f.Expected) {
+			t.Error(f.name, f.msg, err)
+		}
 	}
 }
 
-func TestUnmarshalBadReq(t *testing.T) {
-	err := Unmarshal([]byte(jsBadReqString), &Test{})
-	t.Log(err)
-	if err == nil {
-		t.Error("Did not throw error on required field Name (string)")
-	}
-	err = Unmarshal([]byte(jsBadReqInt), &Test{})
-	t.Log(err)
-	if err == nil {
-		t.Error("Did not throw error on required field Age (int)")
-	}
-	err = Unmarshal([]byte(jsBadReqNested), &Test{})
-	t.Log(err)
-	if err == nil {
-		t.Error("Did not throw error on required nested field Hair (struct)")
-	}
-}
-func TestUnmarshalTruncateString(t *testing.T) {
-	v := Test{}
-	err := Unmarshal([]byte(jsTruncateString), &v)
-	if err != nil {
-		t.Error("Could not marshal proper JSON:", err)
-	}
-	if v.Name != "Jona" {
-		t.Error("slen tag found and string not truncated: expected Jona got: ", v.Name)
-	}
-}
-func TestUnmarshalTruncateStringPtr(t *testing.T) {
-	v := TestPtr{}
-	err := Unmarshal([]byte(jsTruncateStringPtr), &v)
-	if err != nil {
-		t.Error("Could not marshal proper JSON:", err)
-	}
-	if v.Name != "Jona" {
-		t.Error("slen tag found and string not truncated: expected Jona got: ", v.Name)
-	}
-	if v.Hair[0].Color != "br" {
-		t.Error("slen tag found and *[]struct not truncated: expected br got: ", v.Hair[0].Color)
+func TestTruncateString(t *testing.T) {
+	fixtures := []struct {
+		ExpectedErr error
+		Expected    func(*Test) bool
+		s           interface{}
+		json        string
+		name        string
+		msg         string
+	}{
+		{nil, func(t *Test) bool { return t.Name == "Jona" }, &Test{}, `{"name":"Jonathon","age":25, "hair":{"color":"brown"}}`, "Truncate String", "expect nil error & Name=Jona got:"},
+		{nil, func(t *Test) bool { return t.Hair.Color == "br" }, &Test{}, `{"name":"Jonathon","age":25, "hair":{"color":"brown"}}`, "Truncate String", "expect nil error & Color=br got:"},
 	}
 
+	for _, f := range fixtures {
+		t.Log(f.name)
+		err := Unmarshal([]byte(f.json), f.s)
+		if fmt.Sprint(err) != fmt.Sprint(f.ExpectedErr) {
+			t.Error(f.msg, err)
+		}
+		if f.Expected(f.s.(*Test)) != true {
+			t.Error(f.msg, f.s)
+		}
+	}
 }

@@ -2,12 +2,25 @@ package schema
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+type SchemaError struct {
+	error
+	Field   string
+	ErrType string
+}
+
+func (s *SchemaError) Error() string {
+	switch s.ErrType {
+	case "req":
+		return "Schema: The Field " + s.Field + " is required"
+	}
+	return "Schema: Unknown error on Field " + s.Field
+}
 
 func Unmarshal(data []byte, v interface{}) error {
 	err := json.Unmarshal(data, &v)
@@ -31,20 +44,18 @@ func conform(v reflect.Value) error {
 		valField := val.Field(i)
 		switch valField.Kind() {
 		case reflect.Struct:
-			err := conform(valField.Addr())
-			if err != nil {
-				return err
-			}
+			return conform(valField.Addr())
 		case reflect.Slice:
 			for j := 0; j < valField.Len(); j += 1 {
 				if valField.Index(j).Kind() == reflect.Ptr {
-					conform(valField.Index(j))
+					return conform(valField.Index(j))
 				} else {
-					conform(valField.Index(j).Addr())
+					return conform(valField.Index(j).Addr())
 				}
 			}
 		default:
-			if err := handleTags(val, i); err != nil {
+			err := handleTags(val, i)
+			if err != nil {
 				return err
 			}
 		}
@@ -59,9 +70,9 @@ func handleTags(val reflect.Value, i int) error {
 		switch {
 		case t == "req":
 			if isZero(valField) {
-				return fmt.Errorf("Schema: Field %s is required", val.Type().Field(i).Name)
+				return &SchemaError{Field: val.Type().Field(i).Name, ErrType: "req"}
 			}
-		case strings.HasPrefix(t, "slen("):
+		case strings.HasPrefix(t, "truncate("):
 			truncate(t, valField)
 		}
 	}
@@ -76,7 +87,7 @@ func isZero(v reflect.Value) bool {
 }
 
 func truncate(t string, v reflect.Value) error {
-	re := regexp.MustCompile(`^slen\((\d*)\)`)
+	re := regexp.MustCompile(`^truncate\((\d*)\)`)
 	i, err := strconv.Atoi(re.FindStringSubmatch(t)[1])
 	if err != nil {
 		return err
