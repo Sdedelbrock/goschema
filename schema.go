@@ -29,23 +29,36 @@ func conform(v reflect.Value) error {
 	val := v.Elem()
 	for i := 0; i < val.NumField(); i++ {
 		valField := val.Field(i)
-		if valField.Kind().String() == "struct" {
+		switch valField.Kind() {
+		case reflect.Struct:
 			err := conform(valField.Addr())
 			if err != nil {
 				return err
 			}
-		} else {
-			for _, tag := range strings.Split(val.Type().Field(i).Tag.Get("schema"), ",") {
-				t := strings.TrimSpace(tag)
-				switch {
-				case t == "req":
-					if isZero(valField) {
-						return fmt.Errorf("Schema: Field %s is required", val.Type().Field(i).Name)
-					}
-				case strings.HasPrefix(t, "slen("):
-					truncate(t, valField)
-				}
+		case reflect.Slice:
+			for j := 0; j < valField.Len(); j += 1 {
+				conform(valField.Index(j).Addr())
 			}
+		default:
+			if err := handleTags(val, i); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func handleTags(val reflect.Value, i int) error {
+	valField := val.Field(i)
+	for _, tag := range strings.Split(val.Type().Field(i).Tag.Get("schema"), ",") {
+		t := strings.TrimSpace(tag)
+		switch {
+		case t == "req":
+			if isZero(valField) {
+				return fmt.Errorf("Schema: Field %s is required", val.Type().Field(i).Name)
+			}
+		case strings.HasPrefix(t, "slen("):
+			truncate(t, valField)
 		}
 	}
 	return nil
