@@ -61,6 +61,7 @@ func conform(v reflect.Value) error {
 					return conform(valField.Index(j).Addr())
 				}
 			}
+		//TODO: Add map
 		default:
 			err := handleTags(val, i)
 			if err != nil {
