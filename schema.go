@@ -37,7 +37,11 @@ func conform(v reflect.Value) error {
 			}
 		case reflect.Slice:
 			for j := 0; j < valField.Len(); j += 1 {
-				conform(valField.Index(j).Addr())
+				if valField.Index(j).Kind() == reflect.Ptr {
+					conform(valField.Index(j))
+				} else {
+					conform(valField.Index(j).Addr())
+				}
 			}
 		default:
 			if err := handleTags(val, i); err != nil {
