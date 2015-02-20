@@ -39,23 +39,29 @@ func Marshal(v interface{}) ([]byte, error) {
 }
 
 func conform(v reflect.Value) error {
-	val := v.Elem()
-	for i := 0; i < val.NumField(); i++ {
-		valField := val.Field(i)
+	if v.Kind() == reflect.Ptr {
+		if !v.IsValid() {
+			return nil
+		}
+		x := v.Elem()
+		return conform(x)
+	}
+	for i := 0; i < v.NumField(); i++ {
+		valField := v.Field(i)
 		switch valField.Kind() {
 		case reflect.Struct:
-			err := handleTags(val, i)
+			err := handleTags(v, i)
 			if err != nil {
 				return err
 			}
 			return conform(valField.Addr())
 		case reflect.Slice:
-			err := handleTags(val, i)
+			err := handleTags(v, i)
 			if err != nil {
 				return err
 			}
 			for j := 0; j < valField.Len(); j += 1 {
-				if valField.Index(j).Kind() == reflect.Ptr {
+				if valField.Index(j).Kind() != reflect.Ptr {
 					return conform(valField.Index(j))
 				} else {
 					return conform(valField.Index(j).Addr())
@@ -63,7 +69,7 @@ func conform(v reflect.Value) error {
 			}
 		//TODO: Add map
 		default:
-			err := handleTags(val, i)
+			err := handleTags(v, i)
 			if err != nil {
 				return err
 			}
