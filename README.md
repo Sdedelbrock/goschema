@@ -1,5 +1,5 @@
-# goschema
-A library for validating and mutating JSON data into a struct by utilizing go struct tags.  Design to be a drop in replacement for json.Marshal/json.Unmarshal.
+# go schema
+A library for validating and mutating JSON data into a struct by utilizing go struct tags.  Designed to be a drop in replacement for json.Marshal/json.Unmarshal.  Built to help normalize & mutate unsructured json into schema based structured formats suitable for storage.
 
 `go get github.com/Sdedelbrock/goschema`
 
