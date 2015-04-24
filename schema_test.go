@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"testing"
 )
@@ -13,6 +15,18 @@ const jsTruncateString = `{"name":"Jonathon","age":25, "hair":{"color":"brown"}}
 
 const jsTruncateStringPtr = `{"name":"Jonathon","age":25, "hair":[{"color":"brown"},{"color":"red"}]}`
 
+type Parent struct {
+	TestPtrs1   []TestPtr    `json:"test_ptrs1" `
+	TestSlices1 []TestSlice  `json:"test_slices1" `
+	Tests1      []Test       `json:"tests1" `
+	TestPtrs2   []*TestPtr   `json:"test_ptrs2" `
+	TestSlices2 []*TestSlice `json:"test_slices2" `
+	Tests2      []*Test      `json:"tests2" `
+	TestPtrs3   *[]TestPtr   `json:"test_ptrs3" `
+	TestSlices3 *[]TestSlice `json:"test_slices3" `
+	Tests3      *[]Test      `json:"tests3" `
+}
+
 type Test struct {
 	Name string `json:"name" schema:"req,truncate(4)"`
 	Age  int    `json:"age" schema:"req"`
@@ -24,8 +38,77 @@ type TestPtr struct {
 	Hair []*Hair `json:"hair" schema:req`
 }
 
+type TestSlice struct {
+	Name string `json:"name" schema:"req,truncate(4)"`
+	Age  int    `json:"age" schema:"req"`
+	Hair []Hair `json:"hair" schema:req`
+}
+
 type Hair struct {
 	Color string `json:"color" schema:"req,truncate(2)"`
+}
+
+func TestTruncateReallyComplicatedStruct(t *testing.T) {
+	var p = &Parent{}
+
+	parent := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests2":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests3":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}]}`
+	expected := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"tests2":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"tests3":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}]}`
+
+	err := Unmarshal([]byte(parent), p)
+	if err != nil {
+		t.Error(err)
+	}
+
+	output, err := Marshal(p)
+
+	if !bytes.Equal([]byte(expected), output) {
+		var dst bytes.Buffer
+		json.Indent(&dst, output, "=", "\t")
+		t.Log(dst.String())
+		t.Error("Failed")
+	}
+
+	// fmt.Printf("%+v", p)
+
+	// for _, v1 := range p.TestPtrs1 {
+	// 	for _, v2 := range v1.Hair {
+	// 		if v2.Color != "br" {
+	// 			t.Error("Fail")
+	// 		}
+	// 	}
+	// }
+}
+
+func TestTruncateComplicatedStruct(t *testing.T) {
+	var s = &TestSlice{}
+	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}]}`
+
+	fmt.Println(testPtr)
+	err := Unmarshal([]byte(testPtr), s)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("%+v", s)
+	if s.Hair[0].Color != "br" {
+		t.Error("Fail")
+	}
+
+}
+
+func TestTruncateComplicatedStruct2(t *testing.T) {
+	var s = &TestPtr{}
+	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}]}`
+
+	fmt.Println(testPtr)
+	err := Unmarshal([]byte(testPtr), s)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("%+v", s)
+	if s.Hair[0].Color != "br" {
+		t.Error("Fail")
+	}
+
 }
 
 func TestRequired(t *testing.T) {
