@@ -52,7 +52,7 @@ func TestTruncateReallyComplicatedStruct(t *testing.T) {
 	var p = &Parent{}
 
 	parent := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests2":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests3":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}]}`
-	expected := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"tests2":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"tests3":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}]}`
+	expected := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests2":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests3":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}]}`
 
 	err := Unmarshal([]byte(parent), p)
 	if err != nil {
@@ -67,29 +67,18 @@ func TestTruncateReallyComplicatedStruct(t *testing.T) {
 		t.Log(dst.String())
 		t.Error("Failed")
 	}
-
-	// fmt.Printf("%+v", p)
-
-	// for _, v1 := range p.TestPtrs1 {
-	// 	for _, v2 := range v1.Hair {
-	// 		if v2.Color != "br" {
-	// 			t.Error("Fail")
-	// 		}
-	// 	}
-	// }
 }
 
 func TestTruncateComplicatedStruct(t *testing.T) {
 	var s = &TestSlice{}
-	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}]}`
+	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}, {"color": "blonde"}]}`
 
-	fmt.Println(testPtr)
 	err := Unmarshal([]byte(testPtr), s)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("%+v", s)
-	if s.Hair[0].Color != "br" {
+
+	if s.Hair[0].Color != "br" || s.Hair[1].Color != "bl" {
 		t.Error("Fail")
 	}
 
@@ -99,12 +88,11 @@ func TestTruncateComplicatedStruct2(t *testing.T) {
 	var s = &TestPtr{}
 	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}]}`
 
-	fmt.Println(testPtr)
 	err := Unmarshal([]byte(testPtr), s)
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Printf("%+v", s)
+
 	if s.Hair[0].Color != "br" {
 		t.Error("Fail")
 	}

@@ -27,6 +27,7 @@ func Unmarshal(data []byte, v interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return conform(reflect.ValueOf(v))
 }
 
@@ -39,47 +40,57 @@ func Marshal(v interface{}) ([]byte, error) {
 }
 
 func conform(v reflect.Value) error {
-	if v.Kind() == reflect.Ptr {
+	var err error
+	var valField reflect.Value
+
+	switch v.Kind() {
+	case reflect.Ptr:
 		if !v.IsValid() {
 			return nil
 		}
 		x := v.Elem()
 		return conform(x)
-	}
-	for i := 0; i < v.NumField(); i++ {
-		valField := v.Field(i)
-		switch valField.Kind() {
-		case reflect.Struct:
-			err := handleTags(v, i)
+	case reflect.Struct:
+		for i := 0; i < v.NumField(); i++ {
+			valField = v.Field(i)
+
+			err = handleTags(v, i)
 			if err != nil {
 				return err
 			}
-			return conform(valField.Addr())
-		case reflect.Slice:
-			err := handleTags(v, i)
-			if err != nil {
-				return err
-			}
-			for j := 0; j < valField.Len(); j += 1 {
-				if valField.Index(j).Kind() != reflect.Ptr {
-					return conform(valField.Index(j))
-				} else {
-					return conform(valField.Index(j).Addr())
-				}
-			}
-		//TODO: Add map
-		default:
-			err := handleTags(v, i)
+
+			err = conform(valField.Addr())
 			if err != nil {
 				return err
 			}
 		}
+	case reflect.Slice:
+		// err := handleTags(v)
+		if err != nil {
+			return err
+		}
+
+		for j := 0; j < v.Len(); j += 1 {
+
+			if v.Index(j).Kind() != reflect.Ptr {
+				err = conform(v.Index(j))
+			} else {
+				err = conform(v.Index(j).Addr())
+			}
+			if err != nil {
+				return err
+			}
+		}
+		// TODO: add map
+		// case reflect.Map:
+		// 		err = conform(v)
 	}
-	return nil
+	return err
 }
 
 func handleTags(val reflect.Value, i int) error {
 	valField := val.Field(i)
+
 	for _, tag := range strings.Split(val.Type().Field(i).Tag.Get("schema"), ",") {
 		t := strings.TrimSpace(tag)
 		switch {
@@ -90,6 +101,7 @@ func handleTags(val reflect.Value, i int) error {
 		case strings.HasPrefix(t, "truncate("):
 			truncate(t, valField)
 		}
+
 	}
 	return nil
 }
@@ -104,6 +116,7 @@ func isZero(v reflect.Value) bool {
 func truncate(t string, v reflect.Value) error {
 	re := regexp.MustCompile(`^truncate\((\d*)\)`)
 	i, err := strconv.Atoi(re.FindStringSubmatch(t)[1])
+
 	if err != nil {
 		return err
 	}
@@ -113,6 +126,7 @@ func truncate(t string, v reflect.Value) error {
 		if len(val) > i {
 			v.SetString(val[:i])
 		}
+
 	}
 	return nil
 }
