@@ -65,7 +65,6 @@ func conform(v reflect.Value) error {
 			}
 		}
 	case reflect.Slice:
-		// err := handleTags(v)
 		if err != nil {
 			return err
 		}
