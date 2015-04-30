@@ -21,9 +21,9 @@ type Person struct {
 
 func main(){
 	var i = Person{}
-	err := schema.Unmarshal([]byte(`{}`), &i)
+	err := schema.Unmarshal(json.Unmarshall,[]byte(`{}`), &i)
 	fmt.Println(err)  // Schema: The Field FirstName is required
-	err = schema.Unmarshal([]byte(`{"first-name":"Charlie", "last-name":"Chaplin"}`), &i)
+	err = schema.Unmarshal(json.Unmarshall,[]byte(`{"first-name":"Charlie", "last-name":"Chaplin"}`), &i)
 	fmt.Println(err,i)  //<nil> {Charlie Chap}
 }
 ```

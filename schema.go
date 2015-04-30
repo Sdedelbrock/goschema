@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"encoding/json"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -14,6 +13,9 @@ type SchemaError struct {
 	ErrType string
 }
 
+type Marshaller func(interface{}) ([]byte, error)
+type Unmarshaller func([]byte, interface{}) error
+
 func (s *SchemaError) Error() string {
 	switch s.ErrType {
 	case "req":
@@ -22,8 +24,8 @@ func (s *SchemaError) Error() string {
 	return "Schema: Unknown error on Field " + s.Field
 }
 
-func Unmarshal(data []byte, v interface{}) error {
-	err := json.Unmarshal(data, &v)
+func Unmarshal(um Unmarshaller, data []byte, v interface{}) error {
+	err := um(data, &v)
 	if err != nil {
 		return err
 	}
@@ -31,8 +33,8 @@ func Unmarshal(data []byte, v interface{}) error {
 	return conform(reflect.ValueOf(v))
 }
 
-func Marshal(v interface{}) ([]byte, error) {
-	j, err := json.Marshal(v)
+func Marshal(m Marshaller, v interface{}) ([]byte, error) {
+	j, err := m(v)
 	if err != nil {
 		return nil, err
 	}

@@ -54,12 +54,12 @@ func TestTruncateReallyComplicatedStruct(t *testing.T) {
 	parent := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"brown"}]},{"name":"John","age":25,"hair":[{"color":"brown"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests2":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}],"tests3":[{"name":"John","age":25,"hair":{"color":"brown"}},{"name":"John","age":25,"hair":{"color":"brown"}}]}`
 	expected := `{"test_ptrs1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices1":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests1":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"test_ptrs2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices2":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests2":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}],"test_ptrs3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"test_slices3":[{"name":"John","age":25,"hair":[{"color":"br"}]},{"name":"John","age":25,"hair":[{"color":"br"}]}],"tests3":[{"name":"John","age":25,"hair":{"color":"br"}},{"name":"John","age":25,"hair":{"color":"br"}}]}`
 
-	err := Unmarshal([]byte(parent), p)
+	err := Unmarshal(json.Unmarshal, []byte(parent), p)
 	if err != nil {
 		t.Error(err)
 	}
 
-	output, err := Marshal(p)
+	output, err := Marshal(json.Marshal, p)
 
 	if !bytes.Equal([]byte(expected), output) {
 		var dst bytes.Buffer
@@ -73,7 +73,7 @@ func TestTruncateComplicatedStruct(t *testing.T) {
 	var s = &TestSlice{}
 	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}, {"color": "blonde"}]}`
 
-	err := Unmarshal([]byte(testPtr), s)
+	err := Unmarshal(json.Unmarshal, []byte(testPtr), s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -88,7 +88,7 @@ func TestTruncateComplicatedStruct2(t *testing.T) {
 	var s = &TestPtr{}
 	testPtr := `{"name": "John", "age" : 25, "hair": [{"color": "brown"}]}`
 
-	err := Unmarshal([]byte(testPtr), s)
+	err := Unmarshal(json.Unmarshal, []byte(testPtr), s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -116,7 +116,7 @@ func TestRequired(t *testing.T) {
 
 	for _, f := range fixtures {
 		t.Log(f.name)
-		err := Unmarshal([]byte(f.json), f.s)
+		err := Unmarshal(json.Unmarshal, []byte(f.json), f.s)
 		if fmt.Sprint(err) != fmt.Sprint(f.Expected) {
 			t.Error(f.name, f.msg, err)
 		}
@@ -138,7 +138,7 @@ func TestTruncateString(t *testing.T) {
 
 	for _, f := range fixtures {
 		t.Log(f.name)
-		err := Unmarshal([]byte(f.json), f.s)
+		err := Unmarshal(json.Unmarshal, []byte(f.json), f.s)
 		if fmt.Sprint(err) != fmt.Sprint(f.ExpectedErr) {
 			t.Error(f.msg, err)
 		}
